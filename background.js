@@ -9,8 +9,6 @@ const DEFAULTS = {
   systemPrompt:
     "You are a professional translator. Translate the user's text faithfully and naturally. Output only the translation, no explanations, no quotes, preserve original line breaks.",
   targetLangMode: "auto",         // auto | zh | en
-  concurrency: 8,                 // 4 → 8（提速）
-  batchSize: 3,                   // 15 → 3（提速）
   disableThinking: true,          // DeepSeek V3.1+ 默认关闭思考模式
   blocklist: [],                  // string[]，按 hostname 后缀匹配，命中则禁划词图标自动弹出
 };
@@ -154,53 +152,6 @@ async function llmTranslateOne(text, targetLang, cfg) {
   return out;
 }
 
-async function llmTranslateBatch(texts, targetLang, cfg) {
-  const numbered = texts.map((t, i) => `${i + 1}. ${t.replace(/\n/g, " ⏎ ")}`).join("\n");
-  const userMsg =
-    `Translate each numbered item below into ${targetLang}.\n` +
-    `Preserve any "⏎" markers (they represent original line breaks).\n` +
-    `Output STRICT JSON: an array of strings in the same order, with the same length as input. ` +
-    `No explanations, no markdown fences.\n\n` +
-    `Input:\n${numbered}`;
-
-  const url = cfg.baseUrl.replace(/\/+$/, "") + "/chat/completions";
-  const body = {
-    model: cfg.model,
-    messages: [
-      { role: "system", content: cfg.systemPrompt },
-      { role: "user", content: userMsg },
-    ],
-    temperature: 0.2,
-    stream: false,
-    response_format: { type: "json_object" },
-  };
-  if (cfg.disableThinking) body.thinking = { type: "disabled" };
-
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${cfg.apiKey}`,
-  };
-
-  let raw;
-  let resp = await fetchWithTimeout(url, { method: "POST", headers, body: JSON.stringify(body) });
-  if (!resp.ok) {
-    // 部分接口不支持 response_format / thinking，去掉再重试
-    delete body.response_format;
-    delete body.thinking;
-    const resp2 = await fetchWithTimeout(url, { method: "POST", headers, body: JSON.stringify(body) });
-    if (!resp2.ok) {
-      const errText = await resp2.text().catch(() => "");
-      throw new Error(`API ${resp2.status}: ${errText.slice(0, 200)}`);
-    }
-    raw = (await resp2.json())?.choices?.[0]?.message?.content || "";
-  } else {
-    raw = (await resp.json())?.choices?.[0]?.message?.content || "";
-  }
-
-  const arr = parseJsonArray(raw, texts.length);
-  return arr.length === texts.length ? arr : parseNumbered(raw, texts.length);
-}
-
 // ---------- Google 翻译引擎（free 端点）----------
 function googleLangCode(target) {
   if (!target) return "zh-CN";
@@ -237,11 +188,6 @@ async function googleTranslateOne(text, targetLang) {
   }
 }
 
-async function googleTranslateBatch(texts, targetLang) {
-  // free 端点不支持原生 batch，每段独立请求
-  return await Promise.all(texts.map(t => googleTranslateOne(t, targetLang)));
-}
-
 // ---------- 顶层翻译 API ----------
 async function translateOne(text, opts = {}) {
   // 临时配置不读 sync、不读写缓存（用于 options 的"测试连接"）
@@ -274,92 +220,6 @@ async function translateOne(text, opts = {}) {
   return { translation: out, targetLang, engine: cfg.engine };
 }
 
-async function translateBatch(texts, opts = {}) {
-  await ensureCacheLoaded();
-  const cfg = await getConfig();
-  const sample = texts.join(" ").slice(0, 500);
-  const targetLang = opts.targetLang || detectTargetLang(sample, cfg.targetLangMode);
-
-  // 缓存命中拆分
-  const results = new Array(texts.length);
-  const missingIdx = [];
-  const missingTexts = [];
-  texts.forEach((t, i) => {
-    const k = cacheKey(cfg.engine, cfg.engine === "google" ? "google" : cfg.model, targetLang, t);
-    const hit = cacheGet(k);
-    if (hit) results[i] = hit;
-    else { missingIdx.push(i); missingTexts.push(t); }
-  });
-  if (missingTexts.length === 0) return { translations: results, targetLang };
-
-  let translated;
-  if (cfg.engine === "google") {
-    translated = await googleTranslateBatch(missingTexts, targetLang);
-  } else {
-    if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) {
-      throw new Error("未配置 LLM API：请在设置页填写 Base URL / API Key / Model，或将引擎切换为 Google。");
-    }
-    translated = await llmTranslateBatch(missingTexts, targetLang, cfg);
-  }
-
-  missingIdx.forEach((origIdx, j) => {
-    const tr = (translated[j] || "").trim();
-    results[origIdx] = tr;
-    if (tr) {
-      const k = cacheKey(cfg.engine, cfg.engine === "google" ? "google" : cfg.model, targetLang, missingTexts[j]);
-      cacheSet(k, tr);
-    }
-  });
-  return { translations: results, targetLang, engine: cfg.engine };
-}
-
-// ---------- LLM 输出解析 ----------
-function parseJsonArray(raw, expectedLen) {
-  if (!raw) return [];
-  let s = raw.trim();
-  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
-  try {
-    const v = JSON.parse(s);
-    if (Array.isArray(v)) return v.map(unwrapMarker);
-    if (v && Array.isArray(v.translations)) return v.translations.map(unwrapMarker);
-    if (v && typeof v === "object") {
-      const keys = Object.keys(v).filter(k => /^\d+$/.test(k)).sort((a, b) => +a - +b);
-      if (keys.length === expectedLen) return keys.map(k => unwrapMarker(v[k]));
-    }
-  } catch {}
-  const m = s.match(/\[[\s\S]*\]/);
-  if (m) {
-    try {
-      const v = JSON.parse(m[0]);
-      if (Array.isArray(v)) return v.map(unwrapMarker);
-    } catch {}
-  }
-  return [];
-}
-
-function parseNumbered(raw, expectedLen) {
-  const lines = raw.split(/\r?\n/);
-  const out = [];
-  let cur = null, curIdx = 0;
-  for (const line of lines) {
-    const m = line.match(/^\s*(\d+)[\.\)、]\s*(.*)$/);
-    if (m) {
-      if (cur !== null) out[curIdx - 1] = unwrapMarker(cur.trim());
-      curIdx = +m[1];
-      cur = m[2];
-    } else if (cur !== null) {
-      cur += "\n" + line;
-    }
-  }
-  if (cur !== null) out[curIdx - 1] = unwrapMarker(cur.trim());
-  for (let i = 0; i < expectedLen; i++) if (out[i] === undefined) out[i] = "";
-  return out.slice(0, expectedLen);
-}
-
-function unwrapMarker(s) {
-  return typeof s === "string" ? s.replace(/\s*⏎\s*/g, "\n") : "";
-}
-
 // ---------- 消息路由 ----------
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
@@ -369,9 +229,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           targetLang: msg.targetLang,
           overrideConfig: msg.overrideConfig,
         });
-        sendResponse({ ok: true, ...r });
-      } else if (msg?.type === "TRANSLATE_BATCH") {
-        const r = await translateBatch(msg.texts, { targetLang: msg.targetLang });
         sendResponse({ ok: true, ...r });
       } else if (msg?.type === "PING") {
         sendResponse({ ok: true });
@@ -396,11 +253,6 @@ chrome.runtime.onInstalled.addListener(async () => {
       id: "translate-selection",
       title: "翻译: %s",
       contexts: ["selection"],
-    });
-    chrome.contextMenus.create({
-      id: "translate-page",
-      title: "整页翻译 / 切换显示",
-      contexts: ["page"],
     });
   } catch (e) {
     console.warn("[喵喵翻译] contextMenus 创建失败:", e);
@@ -432,8 +284,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       type: "TRANSLATE_SELECTION_FROM_MENU",
       text: info.selectionText || "",
     });
-  } else if (info.menuItemId === "translate-page") {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PAGE_TRANSLATE" });
   }
 });
 
@@ -443,7 +293,5 @@ chrome.commands.onCommand.addListener(async (cmd) => {
   if (!tab?.id) return;
   if (cmd === "translate-selection") {
     chrome.tabs.sendMessage(tab.id, { type: "TRANSLATE_SELECTION_FROM_SHORTCUT" });
-  } else if (cmd === "translate-page") {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PAGE_TRANSLATE" });
   }
 });

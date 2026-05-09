@@ -3,19 +3,6 @@ async function getActiveTab() {
   return tab;
 }
 
-function send(tabId, msg) {
-  return new Promise((resolve) => {
-    try {
-      chrome.tabs.sendMessage(tabId, msg, (r) => {
-        if (chrome.runtime.lastError) resolve({ ok: false, error: chrome.runtime.lastError.message });
-        else resolve(r);
-      });
-    } catch (e) {
-      resolve({ ok: false, error: String(e?.message || e) });
-    }
-  });
-}
-
 function isBlocked(hostname, blocklist) {
   if (!blocklist || !blocklist.length) return false;
   const h = (hostname || "").toLowerCase();
@@ -87,31 +74,6 @@ async function refresh() {
     bb.classList.toggle("active", blocked);
     bd.textContent = blocked ? `已禁用：${host}` : `当前：${host}`;
   }
-
-  // —— 整页翻译按钮文本 ——
-  if (!tab?.id) return;
-  const r = await send(tab.id, { type: "GET_PAGE_TR_STATE" });
-  const btn = document.getElementById("toggleBtn");
-  if (r?.ok) {
-    if (!r.hasTranslations) btn.textContent = "整页翻译";
-    else if (r.hidden) btn.textContent = "显示译文";
-    else btn.textContent = "隐藏译文";
-  }
-}
-
-async function onToggle() {
-  const tab = await getActiveTab();
-  if (!tab?.id) return;
-  // 不 await：整页翻译是后台 fire-and-forget，立即关闭 popup
-  send(tab.id, { type: "TOGGLE_PAGE_TRANSLATE" });
-  window.close();
-}
-
-async function onClear() {
-  const tab = await getActiveTab();
-  if (!tab?.id) return;
-  await send(tab.id, { type: "CLEAR_PAGE_TRANSLATE" });
-  await refresh();
 }
 
 async function onBlocklistToggle() {
@@ -131,8 +93,6 @@ async function onBlocklistToggle() {
 
 document.addEventListener("DOMContentLoaded", () => {
   refresh();
-  document.getElementById("toggleBtn").addEventListener("click", onToggle);
-  document.getElementById("clearBtn").addEventListener("click", onClear);
   document.getElementById("optionsBtn").addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });

@@ -3,8 +3,8 @@
   "name": "喵喵翻译",
   "version": "0.2.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwaxFm5JM+tVL6q36gyUnI78mCKfuv8rnKCLGqOxfK1gSFrjiwnP4Lt6joPSLbwY4iXJIjzPMLjrOvlO0lozDJ1PmARUTnyRwXFQBrT5Oc/3PRYFXF493MyPmkqHXTcLx4g04AH1hYarQ0jgWcUH6nNiZZz16x4VgyffGd3iSYk3Kaa40q8nEclctNYEmOpX7wkPMqyF9+FPcw5rBMLQwMtIcP8zNfG6mHOPVRdH+m1Im1HxIej+CTNcn6Q7hzSv1G9xPhgoaJVg5tabFYp0/PlJgCBKloEOUzqYgcBWhHP9oAY3+aflDEPxhdSsqZMFu6xEu8RnpriFlLLjvjoAJQQIDAQAB",
-  "description": "喵喵翻译 🐱 轻量自用翻译扩展：划词气泡 / 右键菜单 / 整页双语对照，支持 LLM (OpenAI 兼容) 与 Google 翻译",
-  "permissions": ["storage", "contextMenus", "activeTab", "scripting"],
+  "description": "喵喵翻译 🐱 轻量自用翻译扩展：划词气泡 / 右键菜单，支持 LLM (OpenAI 兼容) 与 Google 翻译",
+  "permissions": ["storage", "contextMenus", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
@@ -31,10 +31,8 @@
       "matches": ["<all_urls>"],
       "js": [
         "content/selection-bubble.js",
-        "content/fullpage.js",
         "content/content.js"
       ],
-      "css": ["content/styles.css"],
       "run_at": "document_idle",
       "all_frames": false
     }
@@ -43,10 +41,6 @@
     "translate-selection": {
       "suggested_key": { "default": "Alt+T" },
       "description": "喵喵翻译：翻译选中文本"
-    },
-    "translate-page": {
-      "suggested_key": { "default": "Alt+A" },
-      "description": "喵喵翻译：整页翻译 / 切换显示译文"
     }
   }
 }

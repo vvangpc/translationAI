@@ -6,9 +6,8 @@ const FIELDS = {
   systemPrompt:
     "You are a professional translator. Translate the user's text faithfully and naturally. Output only the translation, no explanations, no quotes, preserve original line breaks.",
   targetLangMode: "auto",
-  concurrency: 8,
-  batchSize: 3,
   disableThinking: true,
+  scrollCloseThreshold: 100,
   blocklist: [],
 };
 
@@ -54,9 +53,8 @@ async function load() {
   document.getElementById("model").value = cfg.model;
   document.getElementById("systemPrompt").value = cfg.systemPrompt;
   document.getElementById("targetLangMode").value = cfg.targetLangMode;
-  document.getElementById("concurrency").value = cfg.concurrency;
-  document.getElementById("batchSize").value = cfg.batchSize;
   document.getElementById("disableThinking").checked = cfg.disableThinking !== false;
+  document.getElementById("scrollCloseThreshold").value = cfg.scrollCloseThreshold;
   document.getElementById("blocklist").value = blocklistToText(cfg.blocklist);
   applyEngineUI();
 }
@@ -69,9 +67,8 @@ function readForm() {
     model: document.getElementById("model").value.trim(),
     systemPrompt: document.getElementById("systemPrompt").value.trim() || FIELDS.systemPrompt,
     targetLangMode: document.getElementById("targetLangMode").value,
-    concurrency: clampInt(document.getElementById("concurrency").value, 1, 12, 8),
-    batchSize: clampInt(document.getElementById("batchSize").value, 1, 30, 3),
     disableThinking: document.getElementById("disableThinking").checked,
+    scrollCloseThreshold: clampInt(document.getElementById("scrollCloseThreshold").value, 0, 1000, 100),
     blocklist: textToBlocklist(document.getElementById("blocklist").value),
   };
 }
@@ -169,12 +166,10 @@ async function handleImportFile(e) {
       if (obj[k] === undefined) continue;
       if (k === "blocklist") {
         if (Array.isArray(obj[k])) filtered[k] = obj[k].map(String).map(s => s.trim().toLowerCase()).filter(Boolean);
-      } else if (k === "concurrency") {
-        filtered[k] = clampInt(obj[k], 1, 12, 8);
-      } else if (k === "batchSize") {
-        filtered[k] = clampInt(obj[k], 1, 30, 3);
       } else if (k === "disableThinking") {
         filtered[k] = !!obj[k];
+      } else if (k === "scrollCloseThreshold") {
+        filtered[k] = clampInt(obj[k], 0, 1000, 100);
       } else if (typeof obj[k] === "string") {
         filtered[k] = obj[k];
       }

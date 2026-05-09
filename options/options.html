@@ -8,7 +8,7 @@
 <body>
   <div class="container">
     <h1>喵喵翻译</h1>
-    <p class="subtitle">轻量翻译扩展 · 划词气泡 / 右键菜单 / 整页双语对照</p>
+    <p class="subtitle">轻量翻译扩展 · 划词气泡 / 右键菜单</p>
 
     <section>
       <h2>翻译引擎</h2>
@@ -76,17 +76,11 @@
         <textarea id="systemPrompt" rows="4"></textarea>
         <small>留空使用默认。仅 LLM 引擎生效。</small>
       </div>
-      <div class="row inline">
-        <div>
-          <label for="concurrency">整页翻译并发数</label>
-          <input id="concurrency" type="number" min="1" max="12" step="1">
-          <small>默认 8。Google 引擎建议 ≤ 6 避免限流。</small>
-        </div>
-        <div>
-          <label for="batchSize">每批段数</label>
-          <input id="batchSize" type="number" min="1" max="30" step="1">
-          <small>默认 3。越小越早出译文，但请求数越多。</small>
-        </div>
+      <div class="row">
+        <label for="scrollCloseThreshold">划词气泡：滚动关闭阈值（px）</label>
+        <input id="scrollCloseThreshold" type="number" min="0" max="1000" step="10">
+        <small>默认 100。划词翻译气泡显示后，页面滚动累计超过此距离会自动关闭气泡。
+          设为 <code>0</code> 表示禁用滚动关闭（仍保留 ESC / 点击空白处 / X 三种关闭方式）。</small>
       </div>
     </section>
 
@@ -96,7 +90,7 @@
         <label for="blocklist">在这些域名上禁用「划词图标自动弹出」（每行一个，不含 https://）</label>
         <textarea id="blocklist" rows="5" placeholder="twitter.com&#10;news.ycombinator.com"></textarea>
         <small>子域自动匹配：填 <code>example.com</code> 会同时禁用 <code>www.example.com</code>。
-          右键菜单 / 快捷键 / 整页翻译 / popup 操作均不受影响 —— 仅屏蔽划词时自动弹出的图标。
+          右键菜单 / 快捷键 / popup 操作均不受影响 —— 仅屏蔽划词时自动弹出的图标。
           也可以在 popup 里一键加入/移出当前域名。</small>
       </div>
     </section>
@@ -116,7 +110,7 @@
     <section>
       <h2>快捷键</h2>
       <p>
-        默认 <kbd>Alt</kbd>+<kbd>T</kbd> 翻译选中文本，<kbd>Alt</kbd>+<kbd>A</kbd> 整页翻译。<br>
+        默认 <kbd>Alt</kbd>+<kbd>T</kbd> 翻译选中文本。<br>
         如需修改：在 Chrome 地址栏打开
         <code>chrome://extensions/shortcuts</code>。
       </p>

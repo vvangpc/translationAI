@@ -10,6 +10,23 @@
   let rootEl = null;
   let iconEl = null;
   let panelEl = null;
+  let scrollBaselineY = null;
+  let scrollCloseThreshold = 100; // 0 = 禁用，由 chrome.storage.sync 异步覆盖
+
+  try {
+    chrome.storage.sync.get(["scrollCloseThreshold"]).then((r) => {
+      if (typeof r.scrollCloseThreshold === "number") {
+        scrollCloseThreshold = r.scrollCloseThreshold;
+      }
+    }).catch(() => {});
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "sync" && changes.scrollCloseThreshold) {
+        const v = changes.scrollCloseThreshold.newValue;
+        if (typeof v === "number") scrollCloseThreshold = v;
+      }
+    });
+  } catch {}
+
 
   const COPY_SVG = `
     <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -214,6 +231,7 @@
     hostEl.id = HOST_ID;
     hostEl.style.cssText = "all: initial; position: fixed; top: 0; left: 0; z-index: 2147483647;";
     document.documentElement.appendChild(hostEl);
+    scrollBaselineY = window.scrollY;
     shadow = hostEl.attachShadow({ mode: "open" });
 
     const style = document.createElement("style");
@@ -420,6 +438,7 @@
     iconEl = null;
     panelEl = null;
     currentCtx = null;
+    scrollBaselineY = null;
   }
 
   function isInsideHost(node) {
@@ -435,6 +454,11 @@
     if (isInsideHost(e.target)) return;
     hide();
   });
+  window.addEventListener("scroll", () => {
+    if (!hostEl || scrollBaselineY === null) return;
+    if (scrollCloseThreshold <= 0) return; // 0 = 禁用滚动关闭
+    if (Math.abs(window.scrollY - scrollBaselineY) > scrollCloseThreshold) hide();
+  }, { passive: true });
 
   // 仅刷新 chip 的引擎显示，不重绘面板（用于 loading 阶段异步拿到引擎名后填充）
   function setEngine(engine) {

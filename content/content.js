@@ -1,10 +1,9 @@
 // content.js — 入口：选区监听 + 消息接收
-// 依赖：window.__aiTrBubble（selection-bubble.js）和 window.__aiTrFullPage（fullpage.js）
+// 依赖：window.__aiTrBubble（selection-bubble.js）
 
 (() => {
   const Bubble = window.__aiTrBubble;
-  const Full = window.__aiTrFullPage;
-  if (!Bubble || !Full) {
+  if (!Bubble) {
     console.warn("[喵喵翻译] content scripts 未完整加载");
     return;
   }
@@ -143,18 +142,6 @@
         }
         await doTranslateSelection(cap.text, cap.rect);
         sendResponse({ ok: true });
-      } else if (msg?.type === "TOGGLE_PAGE_TRANSLATE") {
-        const r = await Full.toggle();
-        sendResponse({ ok: true, ...r });
-      } else if (msg?.type === "CLEAR_PAGE_TRANSLATE") {
-        Full.clear();
-        sendResponse({ ok: true });
-      } else if (msg?.type === "GET_PAGE_TR_STATE") {
-        sendResponse({
-          ok: true,
-          hasTranslations: Full.hasTranslations(),
-          hidden: document.documentElement.getAttribute("data-ai-tr-hidden") === "1",
-        });
       } else {
         sendResponse({ ok: false, error: "unknown message type" });
       }
