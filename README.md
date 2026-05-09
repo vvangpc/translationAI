@@ -120,17 +120,21 @@ GitHub 仓库右上角 → `Code` → `Download ZIP` → 解压
 
 ---
 
-## 跨电脑使用
+## 跨电脑使用（配置秒同步）
 
-> Chrome 不会自动同步开发者模式加载的扩展，需要每台电脑手动安装。
+> Chrome 不会自动同步开发者模式加载的扩展本身，需要每台电脑手动安装。
+> 但因为 manifest.json 里固定了公钥（`key` 字段），所有设备装上后**扩展 ID 一致**，
+> `chrome.storage.sync` 数据会自动跨设备同步。
+
+**锁定的 Extension ID**：`kgdoofagfkgegohidlenppkghilmepfm`
 
 ### 多电脑流程
 
-1. 在新电脑：`git clone` 这个仓库
-2. `chrome://extensions/` → 加载已解压扩展程序 → 选目录
-3. 配置（API key 等）会**自动从 Google 账号同步过来**
-
-> ⚠️ 默认情况下每台电脑的扩展 ID 不同，配置不互通。如需跨设备共享配置，需要在 manifest.json 里加 `"key": "<公钥>"` 字段固定 ID（暂未配置）。当前替代方案：用 options 页的「导出配置 JSON」+ 「导入配置 JSON」手动迁移。
+1. 在新电脑：`git clone https://github.com/vvangpc/translationAI.git`
+2. `chrome://extensions/` → 开发者模式 → 加载已解压扩展程序 → 选目录
+3. **不需要重新配置 API**：登录同一 Google 账号的 Chrome 会从 `storage.sync` 自动拉取
+   - Base URL / API Key / Model / 黑名单 / 系统 Prompt 全都自动到位
+   - 一般 30s–1min 内同步完成（取决于 Chrome 同步周期）
 
 ### 更新代码
 
@@ -139,6 +143,14 @@ git pull
 ```
 
 然后到 `chrome://extensions/` 找到喵喵翻译卡片，点 ↻ 刷新按钮。
+
+### 关于私钥（important）
+
+- 仓库里的 `manifest.json` 只含**公钥**（`key` 字段），可以安全公开
+- 配套的**私钥**保存在仓库外：`E:\translationAI-private\extension-key.pem`
+- 私钥**仅用于将来打包 CRX 上架**；纯 unpacked 自用**用不到**
+- 如果丢了私钥：影响仅限于「以后想上架就要换新 ID」；当前装机不受影响
+- **不要把私钥提交到 git 仓库**
 
 ---
 
