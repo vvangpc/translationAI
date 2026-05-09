@@ -1,0 +1,73 @@
+/* 中性卡通可爱主题：薄荷青绿 #4ECDC4 + 圆润描边 + 柔和阴影 */
+
+/* 双语对照译文块：作为原段落的同级 sibling 追加 */
+.ai-bi-translated {
+  display: block;
+  margin: 0.5em 0 0.9em 0;
+  padding: 0.5em 0.7em;
+  border-left: 3px solid #4ECDC4;
+  background: rgba(78, 205, 196, 0.08);
+  color: #2C3E50;
+  font-family: inherit;
+  font-size: 0.95em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 8px;
+}
+
+/* 表格内的译文块要紧凑一些 */
+td > .ai-bi-translated,
+th > .ai-bi-translated {
+  margin: 0.25em 0 0 0;
+  padding: 0.25em 0.45em;
+  font-size: 0.9em;
+  border-radius: 6px;
+}
+
+/* 列表项内的译文块 */
+li > .ai-bi-translated {
+  margin: 0.25em 0 0.45em 0;
+  border-radius: 6px;
+}
+
+/* 加载/错误状态 */
+.ai-bi-translated[data-state="loading"] {
+  color: #6B7B8C;
+  font-style: italic;
+  border-left-color: #B6E5E1;
+  background: rgba(78, 205, 196, 0.05);
+}
+.ai-bi-translated[data-state="loading"]::before {
+  content: "🌱 ";
+  font-style: normal;
+}
+.ai-bi-translated[data-state="error"] {
+  color: #C44545;
+  border-left-color: #FF6B6B;
+  background: rgba(255, 107, 107, 0.06);
+}
+
+/* 隐藏译文模式（popup 切换） */
+html[data-ai-tr-hidden="1"] .ai-bi-translated {
+  display: none !important;
+}
+
+/* dark mode */
+@media (prefers-color-scheme: dark) {
+  .ai-bi-translated {
+    color: #E5EDED;
+    background: rgba(78, 205, 196, 0.14);
+    border-left-color: #4ECDC4;
+  }
+  .ai-bi-translated[data-state="loading"] {
+    color: #9CB1B0;
+    background: rgba(78, 205, 196, 0.08);
+    border-left-color: #6FB8B2;
+  }
+  .ai-bi-translated[data-state="error"] {
+    color: #FFA8A8;
+    background: rgba(255, 107, 107, 0.10);
+    border-left-color: #FF6B6B;
+  }
+}

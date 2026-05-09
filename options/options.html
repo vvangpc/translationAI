@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>喵喵翻译 — 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>喵喵翻译</h1>
+    <p class="subtitle">轻量翻译扩展 · 划词气泡 / 右键菜单 / 整页双语对照</p>
+
+    <section>
+      <h2>翻译引擎</h2>
+      <div class="row">
+        <label for="engine">引擎</label>
+        <select id="engine">
+          <option value="llm">LLM（OpenAI 兼容，质量好，需 API Key）</option>
+          <option value="google">Google 翻译（免费，无需 key，速度快）</option>
+        </select>
+        <small id="engineHint" class="hint-google hidden">
+          ⚠ Google 走非官方免费端点，无需 API key。质量低于 LLM，且高并发可能临时限流（429）。
+        </small>
+      </div>
+
+      <div id="llmFields">
+        <div class="row">
+          <label for="baseUrl">Base URL</label>
+          <input id="baseUrl" type="text" placeholder="例如 https://api.deepseek.com/v1">
+          <small>常见示例：
+            DeepSeek <code>https://api.deepseek.com/v1</code> ·
+            智谱 <code>https://open.bigmodel.cn/api/paas/v4</code> ·
+            OpenAI <code>https://api.openai.com/v1</code>
+          </small>
+        </div>
+        <div class="row">
+          <label for="apiKey">API Key</label>
+          <input id="apiKey" type="password" placeholder="sk-...">
+        </div>
+        <div class="row">
+          <label for="model">Model</label>
+          <input id="model" type="text" placeholder="例如 deepseek-chat / glm-4-flash / gpt-4o-mini">
+        </div>
+        <div class="row">
+          <label class="checkbox">
+            <input type="checkbox" id="disableThinking">
+            <span>禁用思考模式（DeepSeek V3.1+ 等支持思考的模型推荐勾上，翻译速度提升 1.5–3 倍）</span>
+          </label>
+          <small>对不支持思考模式的模型/服务商无影响。</small>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="testBtn" class="primary">测试连接</button>
+        <span id="testResult" class="result"></span>
+      </div>
+
+      <small class="sync-hint">
+        ☁️ 配置随 Chrome 登录的 Google 账号自动同步到所有设备。API key 由 Chrome 加密传输与存储；
+        若关闭 Chrome 同步则等同于本地存储。
+      </small>
+    </section>
+
+    <section>
+      <h2>翻译行为</h2>
+      <div class="row">
+        <label for="targetLangMode">目标语言</label>
+        <select id="targetLangMode">
+          <option value="auto">自动（非中文→中文，中文→英文）</option>
+          <option value="zh">固定中文</option>
+          <option value="en">固定英文</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="systemPrompt">系统 Prompt</label>
+        <textarea id="systemPrompt" rows="4"></textarea>
+        <small>留空使用默认。仅 LLM 引擎生效。</small>
+      </div>
+      <div class="row inline">
+        <div>
+          <label for="concurrency">整页翻译并发数</label>
+          <input id="concurrency" type="number" min="1" max="12" step="1">
+          <small>默认 8。Google 引擎建议 ≤ 6 避免限流。</small>
+        </div>
+        <div>
+          <label for="batchSize">每批段数</label>
+          <input id="batchSize" type="number" min="1" max="30" step="1">
+          <small>默认 3。越小越早出译文，但请求数越多。</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>域名黑名单</h2>
+      <div class="row">
+        <label for="blocklist">在这些域名上禁用「划词图标自动弹出」（每行一个，不含 https://）</label>
+        <textarea id="blocklist" rows="5" placeholder="twitter.com&#10;news.ycombinator.com"></textarea>
+        <small>子域自动匹配：填 <code>example.com</code> 会同时禁用 <code>www.example.com</code>。
+          右键菜单 / 快捷键 / 整页翻译 / popup 操作均不受影响 —— 仅屏蔽划词时自动弹出的图标。
+          也可以在 popup 里一键加入/移出当前域名。</small>
+      </div>
+    </section>
+
+    <section>
+      <h2>配置备份</h2>
+      <div class="row backup">
+        <button id="exportBtn">📥 导出配置 JSON</button>
+        <button id="importBtn">📤 导入配置 JSON</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <span id="backupStatus" class="result"></span>
+      </div>
+      <small>导出当前所有设置（含黑名单、API Key 明文）到 <code>.json</code>；导入会覆盖现有配置。
+        不含翻译缓存。文件请妥善保管，不要上传到公开平台。</small>
+    </section>
+
+    <section>
+      <h2>快捷键</h2>
+      <p>
+        默认 <kbd>Alt</kbd>+<kbd>T</kbd> 翻译选中文本，<kbd>Alt</kbd>+<kbd>A</kbd> 整页翻译。<br>
+        如需修改：在 Chrome 地址栏打开
+        <code>chrome://extensions/shortcuts</code>。
+      </p>
+    </section>
+
+    <div class="actions">
+      <button id="saveBtn" class="primary">保存</button>
+      <span id="saveStatus" class="result"></span>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
