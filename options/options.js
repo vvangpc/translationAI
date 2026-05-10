@@ -197,4 +197,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("exportBtn").addEventListener("click", exportConfig);
   document.getElementById("importBtn").addEventListener("click", triggerImport);
   document.getElementById("importFile").addEventListener("change", handleImportFile);
+  document.getElementById("editShortcutsBtn").addEventListener("click", () => {
+    // Chrome 不允许 chrome.tabs.update 直接打开 chrome:// 链接，
+    // 但 chrome.tabs.create 是允许的（chrome://extensions/shortcuts 是常用的允许目标）
+    chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+  });
 });

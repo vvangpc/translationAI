@@ -109,11 +109,14 @@
 
     <section>
       <h2>快捷键</h2>
-      <p>
-        默认 <kbd>Alt</kbd>+<kbd>T</kbd> 翻译选中文本。<br>
-        如需修改：在 Chrome 地址栏打开
-        <code>chrome://extensions/shortcuts</code>。
-      </p>
+      <div class="row">
+        <p>默认 <kbd>Alt</kbd>+<kbd>T</kbd> 翻译选中文本。</p>
+        <button id="editShortcutsBtn">⌨ 修改快捷键</button>
+        <small>
+          点击会打开 Chrome 自带的快捷键设置页（<code>chrome://extensions/shortcuts</code>）。
+          浏览器出于安全考虑，不允许扩展自己修改快捷键，只能用 Chrome 的内置页面修改。
+        </small>
+      </div>
     </section>
 
     <div class="actions">
